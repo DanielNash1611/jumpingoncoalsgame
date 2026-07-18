@@ -7,6 +7,7 @@ type MetaFrames = Record<string, FrameCoord | FrameCoord[]>;
 type SpriteSheetMeta = {
   tileSize?: number;
   frames?: MetaFrames;
+  frameRates?: Record<string, number>;
 };
 
 export function getFrameIndex(x: number, y: number, columns: number) {
@@ -49,7 +50,13 @@ export function createAnimations(scene: Phaser.Scene) {
       }
 
       const loop = shouldLoop(name, frameList.length);
-      const frameRate = frameList.length > 1 ? 6 : 1;
+      const configuredFrameRate = meta.frameRates?.[name];
+      const frameRate =
+        typeof configuredFrameRate === "number" && configuredFrameRate > 0
+          ? configuredFrameRate
+          : frameList.length > 1
+            ? 6
+            : 1;
 
       scene.anims.create({
         key: animKey,

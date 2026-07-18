@@ -3,6 +3,12 @@ import { BootScene } from "./scenes/BootScene";
 import { PreloadScene } from "./scenes/PreloadScene";
 import { SwingScene } from "./scenes/SwingScene";
 import { CoalsScene } from "./scenes/CoalsScene";
+import { DiggingInScene } from "./scenes/DiggingInScene";
+import { AtBottomScene } from "./scenes/AtBottomScene";
+import { DiggingOutScene } from "./scenes/DiggingOutScene";
+import { ByShovelScene } from "./scenes/ByShovelScene";
+import { ReturnSwingScene } from "./scenes/ReturnSwingScene";
+import { LeaveParkScene } from "./scenes/LeaveParkScene";
 
 const INTERNAL_WIDTH = 320;
 const INTERNAL_HEIGHT = 180;
@@ -18,7 +24,7 @@ export function createGame() {
     physics: {
       default: "arcade",
       arcade: {
-        gravity: { y: GRAVITY_Y },
+        gravity: { x: 0, y: GRAVITY_Y },
         debug: false
       }
     },
@@ -34,6 +40,17 @@ export function createGame() {
       antialias: false,
       roundPixels: true
     },
-    scene: [BootScene, PreloadScene, SwingScene, CoalsScene]
+    scene: [
+      BootScene,
+      PreloadScene,
+      SwingScene,
+      CoalsScene,
+      DiggingInScene,
+      AtBottomScene,
+      DiggingOutScene,
+      ByShovelScene,
+      ReturnSwingScene,
+      LeaveParkScene
+    ]
   });
 }

@@ -3,28 +3,559 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#120b12" />
+    <meta
+      name="description"
+      content="Jumping on Coals — a pixel-art game about momentum, burnout, recovery, and familiar cycles."
+    />
     <title>Jumping on Coals</title>
     <style>
+      * {
+        box-sizing: border-box;
+      }
       html, body {
         margin: 0;
         padding: 0;
         width: 100%;
         height: 100%;
-        background: #0b0b0b;
+        background:
+          radial-gradient(circle at 50% 42%, #2a171c 0%, #120b12 48%, #08070a 100%);
         overflow: hidden;
+        overscroll-behavior: none;
       }
       #app {
         width: 100%;
         height: 100%;
       }
+
+      #game-ui {
+        --ui-ink: #fff7e8;
+        --ui-muted: #e2cfbf;
+        --ui-accent: #ffb45f;
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: grid;
+        place-items: center;
+        pointer-events: none;
+        font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--ui-ink);
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      #game-ui[data-tone="twilight"] {
+        --ui-accent: #e7a9c4;
+        --ui-muted: #d8c2d1;
+      }
+
+      #game-ui[data-tone="coals"] {
+        --ui-accent: #ff9852;
+        --ui-muted: #e4c1aa;
+      }
+
+      #game-ui[data-tone="earth"] {
+        --ui-accent: #d99a63;
+        --ui-muted: #c6ad9b;
+      }
+
+      #game-ui[data-tone="ash"] {
+        --ui-accent: #d9e0df;
+        --ui-muted: #bac3c5;
+      }
+
+      #game-ui[data-tone="dawn"] {
+        --ui-accent: #f0c38f;
+        --ui-muted: #d4c5bb;
+      }
+
+      .ui-frame {
+        position: relative;
+        width: min(100vw, calc(100vh * 16 / 9));
+        height: min(100vh, calc(100vw * 9 / 16));
+        overflow: hidden;
+        container-type: inline-size;
+      }
+
+      .ui-title-panel,
+      .ui-loading,
+      .ui-hud,
+      .ui-objective,
+      .ui-toast,
+      .ui-whisper,
+      .ui-cinematic {
+        position: absolute;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 260ms ease, transform 360ms cubic-bezier(.2, .8, .2, 1);
+      }
+
+      .is-visible {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .ui-title-panel {
+        top: 12%;
+        left: 6%;
+        max-width: 72%;
+        transform: translateY(10px);
+        text-shadow: 0 2px 20px rgba(31, 12, 9, .6);
+      }
+
+      .ui-title-panel.is-visible {
+        transform: translateY(0);
+      }
+
+      .ui-title {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(32px, 8cqw, 82px);
+        line-height: .83;
+        letter-spacing: -.045em;
+        color: #fff3d5;
+      }
+
+      .ui-title span {
+        display: block;
+        margin-top: .24em;
+        font-family: Inter, ui-sans-serif, sans-serif;
+        font-size: .46em;
+        line-height: 1;
+        letter-spacing: .14em;
+        color: var(--ui-accent);
+      }
+
+      .ui-title-subtitle {
+        margin: 1.25em 0 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(11px, 1.35cqw, 18px);
+        font-style: italic;
+        color: #f2decb;
+      }
+
+      .ui-title-prompt {
+        margin-top: 2.2em;
+        font-size: clamp(10px, 1.05cqw, 15px);
+        font-weight: 760;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: #fff8e9;
+        animation: ui-breathe 1.8s ease-in-out infinite;
+      }
+
+      .ui-title-sound {
+        margin-top: .85em;
+        font-size: clamp(9px, .8cqw, 12px);
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        color: var(--ui-muted);
+      }
+
+      .ui-loading {
+        inset: 0;
+        display: grid;
+        place-content: center;
+        gap: 12px;
+        text-align: center;
+        background: rgba(13, 8, 12, .48);
+      }
+
+      .ui-loading-label {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(16px, 2.1cqw, 27px);
+        color: #ffe7c2;
+      }
+
+      .ui-loading-track {
+        width: clamp(130px, 26cqw, 320px);
+        height: 3px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, .16);
+      }
+
+      .ui-loading-fill {
+        width: 0;
+        height: 100%;
+        background: var(--ui-accent);
+        transition: width 160ms linear;
+      }
+
+      .ui-hud {
+        top: 5%;
+        left: 4%;
+        right: 4%;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: start;
+        gap: 3%;
+        transform: translateY(-8px);
+      }
+
+      .ui-hud.is-visible {
+        transform: translateY(0);
+      }
+
+      .ui-chapter,
+      .ui-status,
+      .ui-track-label {
+        font-size: clamp(9px, .92cqw, 14px);
+        font-weight: 760;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, .85);
+      }
+
+      .ui-chapter {
+        color: var(--ui-accent);
+      }
+
+      .ui-status {
+        justify-self: end;
+        text-align: right;
+        color: var(--ui-muted);
+      }
+
+      .ui-track-progress {
+        min-width: clamp(96px, 18cqw, 230px);
+        text-align: center;
+      }
+
+      .ui-track-label {
+        display: block;
+        margin-bottom: .55em;
+        color: #f4e6d8;
+      }
+
+      .ui-progress-rail {
+        height: 2px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, .18);
+      }
+
+      .ui-progress-fill {
+        width: 0;
+        height: 100%;
+        background: var(--ui-accent);
+        box-shadow: 0 0 12px color-mix(in srgb, var(--ui-accent) 70%, transparent);
+        transition: width 300ms linear;
+      }
+
+      .ui-objective {
+        left: 50%;
+        bottom: 4.5%;
+        max-width: 86%;
+        padding: .65em 1em .7em;
+        transform: translate(-50%, 8px);
+        border-top: 1px solid color-mix(in srgb, var(--ui-accent) 45%, transparent);
+        background: linear-gradient(90deg, transparent, rgba(14, 9, 13, .76) 16%, rgba(14, 9, 13, .76) 84%, transparent);
+        font-size: clamp(10px, 1.05cqw, 16px);
+        font-weight: 760;
+        line-height: 1.25;
+        letter-spacing: .08em;
+        text-align: center;
+        text-transform: uppercase;
+        text-shadow: 0 1px 8px #000;
+        white-space: nowrap;
+      }
+
+      .ui-objective.is-visible {
+        transform: translate(-50%, 0);
+      }
+
+      .ui-toast {
+        top: 17%;
+        left: 50%;
+        padding: .55em .9em;
+        transform: translate(-50%, -8px);
+        background: rgba(15, 9, 13, .74);
+        border-bottom: 1px solid color-mix(in srgb, var(--ui-accent) 60%, transparent);
+        font-size: clamp(10px, .95cqw, 14px);
+        font-weight: 740;
+        letter-spacing: .1em;
+        text-align: center;
+        text-transform: uppercase;
+        color: var(--ui-accent);
+        white-space: nowrap;
+      }
+
+      .ui-toast.is-visible {
+        transform: translate(-50%, 0);
+      }
+
+      .ui-whisper {
+        opacity: 0;
+        visibility: hidden;
+        max-width: 32%;
+        transform: translateY(5px);
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(10px, 1.05cqw, 16px);
+        font-style: italic;
+        line-height: 1.35;
+        letter-spacing: .015em;
+        color: color-mix(in srgb, var(--ui-accent) 72%, #fff);
+        text-shadow: 0 1px 10px rgba(0, 0, 0, .92);
+        transition:
+          opacity 780ms ease,
+          transform 900ms cubic-bezier(.2, .75, .18, 1),
+          visibility 0s linear 780ms;
+      }
+
+      .ui-whisper.is-visible {
+        opacity: .68;
+        visibility: visible;
+        transform: translateY(0);
+        transition-delay: 0s;
+      }
+
+      .ui-whisper--lower-left {
+        left: 5%;
+        bottom: 19%;
+      }
+
+      .ui-whisper--upper-left {
+        left: 6%;
+        top: 21%;
+      }
+
+      .ui-whisper--upper-right {
+        right: 6%;
+        top: 21%;
+        text-align: right;
+      }
+
+      .ui-whisper--lower-right {
+        right: 5%;
+        bottom: 19%;
+        text-align: right;
+      }
+
+      .ui-cinematic {
+        top: 50%;
+        left: 0;
+        right: 0;
+        padding: 4.5% 12%;
+        transform: translateY(-44%);
+        text-align: center;
+        background: linear-gradient(90deg, transparent, rgba(8, 6, 9, .78) 16%, rgba(8, 6, 9, .78) 84%, transparent);
+        transition:
+          opacity 720ms ease,
+          transform 720ms cubic-bezier(.2, .8, .2, 1),
+          visibility 0s linear 720ms;
+      }
+
+      .ui-cinematic.is-visible {
+        transform: translateY(-50%);
+        transition-delay: 0s;
+      }
+
+      .ui-cinematic-title {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(22px, 4.15cqw, 54px);
+        line-height: .95;
+        letter-spacing: -.025em;
+        color: #fff2d6;
+      }
+
+      .ui-cinematic-body {
+        max-width: 52ch;
+        margin: .9em auto 0;
+        font-size: clamp(10px, 1.05cqw, 16px);
+        line-height: 1.45;
+        color: var(--ui-muted);
+      }
+
+      .ui-cinematic-prompt {
+        margin-top: 1.25em;
+        font-size: clamp(9px, .85cqw, 13px);
+        font-weight: 760;
+        letter-spacing: .13em;
+        text-transform: uppercase;
+        color: var(--ui-accent);
+      }
+
+      .ui-cinematic-prompt.is-choice {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: clamp(32px, 9cqw, 112px);
+      }
+
+      .ui-choice-option {
+        min-width: 16ch;
+        color: var(--ui-muted);
+        opacity: .62;
+        transition: color 160ms ease, opacity 160ms ease, transform 160ms ease;
+      }
+
+      .ui-choice-option.is-selected {
+        color: var(--ui-accent);
+        opacity: 1;
+        transform: translateY(-1px);
+        text-shadow: 0 0 14px color-mix(in srgb, var(--ui-accent) 28%, transparent);
+      }
+
+      .ui-cinematic-prompt.is-selector {
+        flex-direction: column;
+        align-items: center;
+        gap: .8em;
+      }
+
+      .ui-cinematic-prompt.is-selector .ui-choice-option {
+        min-width: min(36ch, 82vw);
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 1.28em;
+        letter-spacing: .02em;
+        text-transform: none;
+      }
+
+      .ui-selector-confirm {
+        color: var(--ui-muted);
+        font-size: .82em;
+      }
+
+      .ui-letterbox {
+        position: absolute;
+        z-index: 20;
+        left: 0;
+        width: 100%;
+        height: 9%;
+        background: #050407;
+        transition: transform 700ms cubic-bezier(.2, .75, .18, 1);
+      }
+
+      .ui-letterbox--top {
+        top: 0;
+        transform: translateY(-102%);
+      }
+
+      .ui-letterbox--bottom {
+        bottom: 0;
+        transform: translateY(102%);
+      }
+
+      .ui-frame.is-letterboxed .ui-letterbox {
+        transform: translateY(0);
+      }
+
+      .ui-touch-controls {
+        position: absolute;
+        z-index: 30;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .ui-touch-button {
+        position: absolute;
+        bottom: 5%;
+        width: clamp(46px, 9cqw, 86px);
+        height: clamp(46px, 9cqw, 86px);
+        display: grid;
+        place-items: center;
+        padding: 0;
+        border: 1px solid color-mix(in srgb, var(--ui-accent) 72%, transparent);
+        border-radius: 50%;
+        background: rgba(18, 11, 17, .62);
+        color: #fff0da;
+        font: 760 clamp(12px, 1.4cqw, 19px)/1 Inter, ui-sans-serif, sans-serif;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        text-shadow: 0 1px 6px #000;
+        box-shadow: inset 0 0 22px rgba(255, 180, 95, .08);
+        pointer-events: auto;
+        touch-action: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .ui-touch-button:active,
+      .ui-touch-button.is-pressed {
+        transform: scale(.92);
+        background: rgba(119, 47, 36, .78);
+      }
+
+      .ui-touch-button--left { left: 4%; }
+      .ui-touch-button--right { left: 15%; }
+      .ui-touch-button--action {
+        right: 4%;
+        width: clamp(58px, 11cqw, 104px);
+        height: clamp(58px, 11cqw, 104px);
+        background: rgba(113, 43, 34, .7);
+      }
+
+      @keyframes ui-breathe {
+        0%, 100% { opacity: 1; }
+        50% { opacity: .48; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .ui-title-panel,
+        .ui-loading,
+        .ui-hud,
+        .ui-objective,
+        .ui-toast,
+        .ui-whisper,
+        .ui-cinematic,
+        .ui-letterbox,
+        .ui-progress-fill,
+        .ui-loading-fill {
+          transition-duration: 1ms !important;
+        }
+        .ui-title-prompt {
+          animation: none;
+        }
+      }
+
       canvas {
+        display: block;
         image-rendering: pixelated;
         image-rendering: crisp-edges;
+        touch-action: none;
+        user-select: none;
+        box-shadow: 0 28px 90px rgba(0, 0, 0, 0.46);
       }
     </style>
   </head>
   <body>
     <div id="app"></div>
+    <div id="game-ui" data-tone="sunset" aria-live="polite">
+      <div id="ui-frame" class="ui-frame">
+        <div class="ui-letterbox ui-letterbox--top"></div>
+        <div class="ui-letterbox ui-letterbox--bottom"></div>
+
+        <section id="ui-title-panel" class="ui-title-panel" aria-hidden="true">
+          <h1 class="ui-title">Jumping <span>on Coals</span></h1>
+          <p class="ui-title-subtitle">A game about momentum, burnout, and what comes after.</p>
+          <div class="ui-title-prompt">Press any key or tap to begin</div>
+          <div id="ui-title-sound" class="ui-title-sound">M · Sound on</div>
+        </section>
+
+        <section id="ui-loading" class="ui-loading" aria-hidden="true">
+          <div id="ui-loading-label" class="ui-loading-label">Gathering the evening</div>
+          <div class="ui-loading-track"><div id="ui-loading-fill" class="ui-loading-fill"></div></div>
+        </section>
+
+        <div id="ui-hud" class="ui-hud" aria-hidden="true">
+          <div id="ui-chapter" class="ui-chapter"></div>
+          <div class="ui-track-progress">
+            <span id="ui-track-label" class="ui-track-label"></span>
+            <div class="ui-progress-rail"><div id="ui-progress-fill" class="ui-progress-fill"></div></div>
+          </div>
+          <div id="ui-status" class="ui-status"></div>
+        </div>
+
+        <div id="ui-toast" class="ui-toast" aria-hidden="true"></div>
+        <div id="ui-whisper" class="ui-whisper" aria-hidden="true"></div>
+        <div id="ui-objective" class="ui-objective" aria-hidden="true"></div>
+
+        <section id="ui-cinematic" class="ui-cinematic" aria-hidden="true">
+          <h2 id="ui-cinematic-title" class="ui-cinematic-title"></h2>
+          <p id="ui-cinematic-body" class="ui-cinematic-body"></p>
+          <div id="ui-cinematic-prompt" class="ui-cinematic-prompt"></div>
+        </section>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
