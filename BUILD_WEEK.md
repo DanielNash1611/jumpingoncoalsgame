@@ -119,7 +119,7 @@ Known limitations:
 - This validation inspected every later chapter by shortcut but did not perform a natural, uninterrupted 37–42 minute playthrough.
 - The production build emits a non-fatal warning for a 1.33 MB minified JavaScript chunk (356 KB gzip).
 - A public deployment, physical mobile device, final screenshots, and final demo video were not validated in this pass.
-- Asset ownership is described by the project history, but the repository does not yet include a license or asset-provenance file suitable for public redistribution review.
+- The software license boundary, original-asset rights, provenance summary, judging permission, and third-party dependency notices are documented in [`LICENSE`](./LICENSE) and [`ASSET_LICENSE.md`](./ASSET_LICENSE.md).
 - The current checkout no longer ships the WAV masters, but the pre-Build-Week Git history still contains their roughly 397 MB of blobs. A fresh clone remains large until an intentional history/LFS migration is performed.
 
 ## Testing and validation

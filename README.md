@@ -154,8 +154,13 @@ Known limitations:
 - The complete natural-duration 37–42 minute path and every branch permutation have not been exhaustively tested in one run.
 - Touch controls compile and render, but physical-device coverage remains limited.
 - The production build emits a non-fatal warning for a large minified JavaScript chunk.
-- The repository does not yet contain a formal license or asset-provenance document. Source, music, and visual reuse should not be assumed without permission from Daniel Nash.
 - Pre-Build-Week Git history still contains the original large WAV blobs, so a fresh clone is larger than the current working tree suggests.
+
+## License and asset rights
+
+The software source code is available under the [MIT License](./LICENSE). The original album, recordings, artwork, sprites, backgrounds, logos, narrative material, screenshots, video, and other creative assets are not covered by that grant and remain reserved by Daniel Nash.
+
+See [ASSET_LICENSE.md](./ASSET_LICENSE.md) for the exact license boundary, provenance summary, limited judging/evaluation permission, and third-party dependency notices.
 
 ## Submission links
 

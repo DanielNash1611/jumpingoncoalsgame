@@ -135,6 +135,6 @@ Priority order:
 4. Produce a public gameplay video under three minutes showing the baseline distinction, the coal transformation, the recovery arc, and the final choice.
 5. Test keyboard and touch flows on at least one physical mobile device and one additional desktop browser.
 6. Deploy the exact commit intended for judging and verify the public URL, audio unlock, asset loading, and deep-link/reload behavior.
-7. Add an asset provenance/license document covering the original album, earlier assets, Build Week visual assets, fonts, and redistribution permissions.
+7. ~~Add an asset provenance/license document covering the original album, earlier assets, Build Week visual assets, fonts, and redistribution permissions.~~ Completed for submission in [`LICENSE`](../LICENSE) and [`ASSET_LICENSE.md`](../ASSET_LICENSE.md).
 8. Decide whether to split the Phaser bundle to remove the Vite chunk-size warning.
 9. Add a small automated smoke test for boot, scene registration, and developer chapter navigation.
