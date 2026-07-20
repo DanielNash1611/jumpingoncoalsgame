@@ -3,6 +3,55 @@ import Phaser from "phaser";
 const SWING_KICK_FIRST_FRAME = 12;
 const SWING_KICK_LAST_FRAME = 15;
 
+export function createWingedFirefly(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  depth = 9,
+  delay = 0
+) {
+  const halo = scene.add
+    .circle(0, 0, 4.6, 0xffd96a, 0.14)
+    .setBlendMode(Phaser.BlendModes.ADD);
+  const core = scene.add
+    .circle(0, 0, 1.15, 0xffffce, 0.94)
+    .setBlendMode(Phaser.BlendModes.ADD);
+  const wingLeft = scene.add
+    .ellipse(-2.4, 0, 3.8, 1.5, 0xffefb0, 0.48)
+    .setRotation(-0.28)
+    .setBlendMode(Phaser.BlendModes.ADD);
+  const wingRight = scene.add
+    .ellipse(2.4, 0, 3.8, 1.5, 0xffefb0, 0.48)
+    .setRotation(0.28)
+    .setBlendMode(Phaser.BlendModes.ADD);
+  const firefly = scene.add
+    .container(x, y, [halo, wingLeft, wingRight, core])
+    .setDepth(depth);
+
+  scene.tweens.add({
+    targets: [wingLeft, wingRight],
+    scaleX: { from: 0.5, to: 1.22 },
+    alpha: { from: 0.3, to: 0.78 },
+    duration: 120,
+    delay,
+    yoyo: true,
+    repeat: -1,
+    ease: "Sine.easeInOut"
+  });
+  scene.tweens.add({
+    targets: core,
+    scale: { from: 0.7, to: 1.35 },
+    alpha: { from: 0.48, to: 1 },
+    duration: 460,
+    delay,
+    yoyo: true,
+    repeat: -1,
+    ease: "Sine.easeInOut"
+  });
+
+  return firefly;
+}
+
 export function updateSwingKickPose(
   player: Phaser.GameObjects.Sprite,
   currentBlend: number,

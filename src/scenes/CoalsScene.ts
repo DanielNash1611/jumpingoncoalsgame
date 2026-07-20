@@ -28,6 +28,8 @@ const COAL_BEATS = [
 ] as const;
 
 const COAL_END_SAFE_START = COALS_CONSTANTS.holeX - 238;
+const FIRE_FINISH_DELAY_MS = 2000;
+const FALLBACK_TRACK_DURATION_MS = 45000;
 
 const CHASE_FIREFLY_AFFIRMATIONS = [
   "Good catch.",
@@ -73,7 +75,11 @@ export class CoalsScene extends BaseScene {
   private choice: ChoiceSide = "left";
   private leaveAnxiety?: LeaveAnxiety;
   private fireFrontX = -420;
+  private scheduledFireFront = -420;
   private fireSetback = 0;
+  private fireTrackDurationMs = FALLBACK_TRACK_DURATION_MS;
+  private fireOutroStartedAt?: number;
+  private fireOutroSetback = 0;
   private fireWarningShown = false;
   private chaseFireflySerial = 0;
   private chaseFirefliesCaught = 0;
@@ -98,7 +104,11 @@ export class CoalsScene extends BaseScene {
     this.coalStage = -1;
     this.leaveAnxiety = undefined;
     this.fireFrontX = -420;
+    this.scheduledFireFront = -420;
     this.fireSetback = 0;
+    this.fireTrackDurationMs = FALLBACK_TRACK_DURATION_MS;
+    this.fireOutroStartedAt = undefined;
+    this.fireOutroSetback = 0;
     this.fireWarningShown = false;
     this.chaseFirefly = undefined;
     this.chaseFireflySerial = 0;
@@ -140,6 +150,10 @@ export class CoalsScene extends BaseScene {
       this.arriveAtHole();
     });
     audioManager.play("03_jumping_on_coals");
+    const loadedTrackDurationMs = audioManager.getDurationMs();
+    this.fireTrackDurationMs = loadedTrackDurationMs > 0
+      ? loadedTrackDurationMs
+      : FALLBACK_TRACK_DURATION_MS;
     this.time.delayedCall(650, () => this.showToast("Air cools you"));
   }
 
@@ -148,6 +162,7 @@ export class CoalsScene extends BaseScene {
       return;
     }
 
+    const dt = Math.min(delta / 1000, 0.034);
     const action = this.consumeAction();
     const tappedDirection = this.time.now <= this.tapUntil ? this.tapDirection : 0;
     const left = Boolean(
@@ -157,6 +172,9 @@ export class CoalsScene extends BaseScene {
       this.cursors.right.isDown || this.keys?.right.isDown || this.touch?.right || tappedDirection > 0
     );
     if (this.runState === "burn-choice" || this.runState === "at-hole") {
+      if (this.runState === "at-hole") {
+        this.updatePursuingFire(dt);
+      }
       if (this.leaveAnxiety) {
         this.updateLeaveAnxiety(left, right, action);
       } else {
@@ -169,7 +187,6 @@ export class CoalsScene extends BaseScene {
     }
 
     this.syncToTrack();
-    const dt = Math.min(delta / 1000, 0.034);
     this.updatePursuingFire(dt);
     this.updateChaseFirefly(dt);
     const body = this.player.body as Phaser.Physics.Arcade.Body;
@@ -471,25 +488,37 @@ export class CoalsScene extends BaseScene {
       .setDepth(21);
   }
 
-  private getMusicFireFront() {
-    return Phaser.Math.Linear(
-      -420,
-      COALS_CONSTANTS.holeX - 260,
-      audioManager.getPlaybackProgress()
-    );
-  }
-
   private updatePursuingFire(dt: number) {
     if (!this.player || !this.pursuitFire) {
       return;
     }
     const progress = audioManager.getPlaybackProgress();
-    const musicFront = this.getMusicFireFront();
-    const targetFront = Math.min(COALS_CONSTANTS.holeX - 260, musicFront - this.fireSetback);
-    const pursuitSpeed = PLAYER_CONSTANTS.moveSpeed * (0.68 + progress * 0.26);
-    this.fireFrontX = targetFront < this.fireFrontX
-      ? targetFront
-      : Math.min(targetFront, this.fireFrontX + pursuitSpeed * dt);
+    let timelineElapsedMs = progress * this.fireTrackDurationMs;
+    if (audioManager.getInSilence()) {
+      if (this.fireOutroStartedAt === undefined) {
+        this.fireOutroStartedAt = this.time.now;
+        this.fireOutroSetback = this.fireSetback;
+      }
+      const outroElapsedMs = Phaser.Math.Clamp(
+        this.time.now - this.fireOutroStartedAt,
+        0,
+        FIRE_FINISH_DELAY_MS
+      );
+      const outroProgress = outroElapsedMs / FIRE_FINISH_DELAY_MS;
+      timelineElapsedMs = this.fireTrackDurationMs + outroElapsedMs;
+      this.fireSetback = Phaser.Math.Linear(this.fireOutroSetback, 0, outroProgress);
+    }
+    const timelineProgress = Phaser.Math.Clamp(
+      timelineElapsedMs / (this.fireTrackDurationMs + FIRE_FINISH_DELAY_MS),
+      0,
+      1
+    );
+    this.scheduledFireFront = Phaser.Math.Linear(
+      -420,
+      COALS_CONSTANTS.worldWidth,
+      timelineProgress
+    );
+    this.fireFrontX = this.scheduledFireFront - this.fireSetback;
     const gap = this.player.x - this.fireFrontX;
     const inEndSafeZone = this.player.x >= COAL_END_SAFE_START;
     const pressure = Phaser.Math.Clamp((340 - gap) / 300, 0, 1);
@@ -539,7 +568,7 @@ export class CoalsScene extends BaseScene {
   }
 
   private givePursuitGrace() {
-    const requiredSetback = this.getMusicFireFront() - (this.checkpointX - 360);
+    const requiredSetback = this.scheduledFireFront - (this.checkpointX - 360);
     this.fireSetback = Math.max(this.fireSetback, requiredSetback);
     this.fireWarningShown = false;
   }
@@ -549,7 +578,7 @@ export class CoalsScene extends BaseScene {
       return;
     }
     this.chaseFirefly?.destroy(true);
-    const requestedLead = afterCatch ? 520 : 390;
+    const requestedLead = afterCatch ? 550 : 420;
     const x = Math.min(
       COALS_CONSTANTS.holeX - 300,
       Math.max(this.player.x + requestedLead, this.fireFrontX + 620)
@@ -604,8 +633,8 @@ export class CoalsScene extends BaseScene {
     }
     const firefly = this.chaseFirefly;
     const cycle = (this.time.now / 1000 + this.chaseFireflySerial * 0.73) % 4.8;
-    const darting = cycle < 1.25;
-    const speed = PLAYER_CONSTANTS.moveSpeed * (darting ? 1.34 : 0.3);
+    const darting = cycle < 1.5;
+    const speed = PLAYER_CONSTANTS.moveSpeed * (darting ? 1.42 : 0.34);
     const minFireLead = this.fireFrontX + 440;
     firefly.x = Math.min(
       COALS_CONSTANTS.holeX - 300,
@@ -616,7 +645,7 @@ export class CoalsScene extends BaseScene {
       + Math.sin(this.time.now * 0.017) * 5;
     firefly.rotation = Math.sin(this.time.now * 0.013) * 0.16;
 
-    if (Phaser.Math.Distance.Between(this.player.x, this.player.y, firefly.x, firefly.y) <= 15) {
+    if (Phaser.Math.Distance.Between(this.player.x, this.player.y, firefly.x, firefly.y) <= 12.5) {
       this.catchChaseFirefly(firefly);
       return;
     }

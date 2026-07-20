@@ -7,3 +7,4 @@ dist
 !.env.example
 *.log
 source_assets/audio-masters/
+video-demo/

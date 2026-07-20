@@ -5,7 +5,11 @@ import { StoryControls } from "../game/input/StoryControls";
 import { LeaveAnxiety } from "../game/narrative/LeaveAnxiety";
 import { gameState } from "../game/state/gameState";
 import { gameHud, type ChoiceSide } from "../game/ui/GameHud";
-import { playFirstAvailable, updateSwingKickPose } from "../game/visuals/StoryVisuals";
+import {
+  createWingedFirefly,
+  playFirstAvailable,
+  updateSwingKickPose
+} from "../game/visuals/StoryVisuals";
 import { BaseScene } from "./BaseScene";
 import { getSwingApexAcceleration, SWING_CONSTANTS } from "./constants";
 
@@ -36,6 +40,17 @@ type ReturnFirefly = {
   container: Phaser.GameObjects.Container;
   angle: number;
 };
+
+type GatheredLightPoint = {
+  x: number;
+  y: number;
+  z: number;
+};
+
+const LIGHTS_PER_ORBIT = 6;
+const LIGHT_ORBIT_REVEAL_MS = 900;
+const LIGHT_ORBIT_SEGMENTS = 30;
+const LIGHT_ORBIT_COLORS = [0xffd982, 0xffefb0, 0xf2ad65, 0xffd18a] as const;
 
 type ReturnState =
   | "swinging"
@@ -87,6 +102,10 @@ export class ReturnSwingScene extends BaseScene {
   private lastAreaMoveAt = -1000;
   private returnFireflies: ReturnFirefly[] = [];
   private returnFirefliesCaught = 0;
+  private gatheredLights: Phaser.GameObjects.Arc[] = [];
+  private gatheredLightTraceBack?: Phaser.GameObjects.Graphics;
+  private gatheredLightTraceFront?: Phaser.GameObjects.Graphics;
+  private gatheredLightOrbitAddedAt = 0;
 
   constructor() {
     super("ReturnSwingScene");
@@ -107,6 +126,8 @@ export class ReturnSwingScene extends BaseScene {
     this.lastAreaMoveAt = -1000;
     this.returnFireflies = [];
     this.returnFirefliesCaught = 0;
+    this.gatheredLights = [];
+    this.gatheredLightOrbitAddedAt = 0;
     this.cameras.main.setBackgroundColor("#130e16");
     this.cameras.main.fadeIn(800, 12, 9, 13);
     this.add.image(160, 90, "playground_morning").setDisplaySize(320, 180).setDepth(0);
@@ -231,6 +252,8 @@ export class ReturnSwingScene extends BaseScene {
       .setStrokeStyle(1, 0xf3d19b, 0.9)
       .setAlpha(0)
       .setDepth(7);
+    this.gatheredLightTraceBack = this.add.graphics().setDepth(9);
+    this.gatheredLightTraceFront = this.add.graphics().setDepth(11);
     this.player = this.add.sprite(160, 99, "player").setDepth(10);
     this.swingKickBlend = updateSwingKickPose(this.player, 0, false, 0);
     this.updateSwingPosition();
@@ -284,50 +307,13 @@ export class ReturnSwingScene extends BaseScene {
     );
     const x = SWING_CONSTANTS.anchorX + Math.sin(chosenAngle) * SWING_CONSTANTS.ropeLength;
     const y = SWING_CONSTANTS.anchorY + Math.cos(chosenAngle) * SWING_CONSTANTS.ropeLength - 7;
-    const halo = this.add
-      .circle(0, 0, 4.6, 0xffd96a, 0.14)
-      .setBlendMode(Phaser.BlendModes.ADD);
-    const core = this.add
-      .circle(0, 0, 1.15, 0xffffce, 0.94)
-      .setBlendMode(Phaser.BlendModes.ADD);
-    const wingLeft = this.add
-      .ellipse(-2.4, 0, 3.8, 1.5, 0xffefb0, 0.48)
-      .setRotation(-0.28)
-      .setBlendMode(Phaser.BlendModes.ADD);
-    const wingRight = this.add
-      .ellipse(2.4, 0, 3.8, 1.5, 0xffefb0, 0.48)
-      .setRotation(0.28)
-      .setBlendMode(Phaser.BlendModes.ADD);
-    const container = this.add
-      .container(x, y, [halo, wingLeft, wingRight, core])
-      .setAlpha(0)
-      .setDepth(9);
+    const container = createWingedFirefly(this, x, y, 9, delay).setAlpha(0);
     this.returnFireflies.push({ container, angle: chosenAngle });
     this.tweens.add({
       targets: container,
       alpha: { from: 0.35, to: 0.9 },
       y: y - 2.5,
       duration: 560,
-      delay,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeInOut"
-    });
-    this.tweens.add({
-      targets: [wingLeft, wingRight],
-      scaleX: { from: 0.5, to: 1.22 },
-      alpha: { from: 0.3, to: 0.78 },
-      duration: 120,
-      delay,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeInOut"
-    });
-    this.tweens.add({
-      targets: core,
-      scale: { from: 0.7, to: 1.35 },
-      alpha: { from: 0.48, to: 1 },
-      duration: 460,
       delay,
       yoyo: true,
       repeat: -1,
@@ -347,6 +333,7 @@ export class ReturnSwingScene extends BaseScene {
     }
     this.returnFireflies = this.returnFireflies.filter((firefly) => firefly !== caught);
     this.returnFirefliesCaught += 1;
+    this.addGatheredLight();
     const { container } = caught;
     for (let index = 0; index < 9; index += 1) {
       const spark = this.add
@@ -377,6 +364,198 @@ export class ReturnSwingScene extends BaseScene {
       onComplete: () => container.destroy(true)
     });
     this.time.delayedCall(1100, () => this.spawnReturnFirefly());
+  }
+
+  private addGatheredLight() {
+    if (!this.player) {
+      return;
+    }
+    if (this.gatheredLights.length % LIGHTS_PER_ORBIT === 0) {
+      this.gatheredLightOrbitAddedAt = this.time.now;
+    }
+    const gathered = this.add
+      .circle(this.player.x, this.player.y, 1.35, 0xffe38c, 0.95)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setDepth(11);
+    this.gatheredLights.push(gathered);
+  }
+
+  private updateGatheredLightPattern(centerX: number, centerY: number) {
+    const count = this.gatheredLights.length;
+    this.gatheredLightTraceBack?.clear();
+    this.gatheredLightTraceFront?.clear();
+    if (count === 0) {
+      return;
+    }
+
+    const points = this.getGatheredLightPoints(count);
+    const densityFade = 1 - Phaser.Math.Clamp((count - 30) / 90, 0, 0.24);
+
+    this.gatheredLights.forEach((light, index) => {
+      const point = points[index];
+      const depth = Phaser.Math.Clamp((point.z + 1) * 0.5, 0, 1);
+      const shimmer = Math.sin(this.time.now * 0.0045 + index * 1.7) * 0.06;
+      light
+        .setPosition(centerX + point.x, centerY + point.y)
+        .setScale(0.72 + depth * 0.42 + shimmer)
+        .setAlpha((0.5 + depth * 0.43) * densityFade)
+        .setDepth(point.z < 0 ? 9.2 : 11.2);
+    });
+
+    this.drawGatheredLightOrbits(count, centerX, centerY);
+  }
+
+  private getGatheredLightPoints(count: number) {
+    const orbitCount = Math.ceil(count / LIGHTS_PER_ORBIT);
+    const newestOrbitReveal = this.getNewestOrbitReveal();
+
+    return Array.from({ length: count }, (_, index) => {
+      const orbitIndex = Math.floor(index / LIGHTS_PER_ORBIT);
+      const orbitStart = orbitIndex * LIGHTS_PER_ORBIT;
+      const lightsInOrbit = Math.min(LIGHTS_PER_ORBIT, count - orbitStart);
+      const lightIndex = index - orbitStart;
+      const angle = this.getOrbitRotation(orbitIndex)
+        + (lightIndex / Math.max(1, lightsInOrbit)) * Math.PI * 2;
+      const reveal = orbitIndex === orbitCount - 1 ? newestOrbitReveal : 1;
+      return this.getOrbitPoint(orbitIndex, angle, reveal);
+    });
+  }
+
+  private getNewestOrbitReveal() {
+    if (this.gatheredLightOrbitAddedAt === 0) {
+      return 1;
+    }
+    return Phaser.Math.Easing.Sine.Out(
+      Phaser.Math.Clamp(
+        (this.time.now - this.gatheredLightOrbitAddedAt) / LIGHT_ORBIT_REVEAL_MS,
+        0,
+        1
+      )
+    );
+  }
+
+  private getOrbitRotation(orbitIndex: number) {
+    const pairIndex = Math.ceil(orbitIndex / 2);
+    const direction = orbitIndex % 2 === 0 ? 1 : -1;
+    const speed = 0.0014 / (1 + pairIndex * 0.14);
+    const windLag = this.getGatheredLightWindLean() * 0.035 * (1 + orbitIndex * 0.24);
+    return this.time.now * speed * direction + orbitIndex * Math.PI * 0.37 + windLag;
+  }
+
+  private getOrbitPoint(orbitIndex: number, angle: number, reveal = 1): GatheredLightPoint {
+    const pairIndex = Math.ceil(orbitIndex / 2);
+    const mirroredSide = orbitIndex % 2 === 1 ? -1 : 1;
+    const radius = orbitIndex === 0 ? 12 : 14 + pairIndex * 3;
+    const precession = this.time.now * 0.00022;
+    const windLean = this.getGatheredLightWindLean();
+    const pitch = (orbitIndex === 0
+      ? 1.04
+      : pairIndex === 1
+        ? 0.76 + Math.sin(precession + orbitIndex * 1.7) * 0.06
+        : 0.6 + Math.sin(precession + orbitIndex * 1.7) * 0.05)
+      + windLean * (0.012 + orbitIndex * 0.004);
+    const yaw = (orbitIndex === 0
+      ? 0
+      : mirroredSide * (
+          (pairIndex === 1 ? 0.38 : 0.26)
+          + Math.sin(precession * 0.7 + orbitIndex) * 0.04
+        ))
+      + windLean * (0.018 + orbitIndex * 0.006);
+    const roll = (orbitIndex === 0
+      ? 0
+      : mirroredSide * (pairIndex === 1 ? 0.76 : 1.18))
+      + windLean * (0.025 + orbitIndex * 0.008);
+    const point = this.rotateLightPoint(
+      { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius, z: 0 },
+      pitch,
+      yaw,
+      roll
+    );
+    const offsetX = (orbitIndex === 0 ? 0 : mirroredSide * pairIndex * 1.15)
+      + windLean * (0.65 + orbitIndex * 0.34);
+    const offsetY = (orbitIndex === 0 ? 0 : -pairIndex * 1.2)
+      + Math.abs(windLean) * orbitIndex * 0.08;
+    return {
+      x: (point.x + offsetX) * reveal,
+      y: (point.y + offsetY) * reveal,
+      z: point.z
+    };
+  }
+
+  private getGatheredLightWindLean() {
+    if (this.stage < 2) {
+      return 0;
+    }
+    const stageStrength = 0.62 + (this.stage - 2) * 0.12;
+    return Math.sin(this.time.now * 0.0017 + 0.8) * stageStrength;
+  }
+
+  private rotateLightPoint(
+    point: GatheredLightPoint,
+    pitch: number,
+    yaw: number,
+    roll: number
+  ): GatheredLightPoint {
+    let x = point.x;
+    let y = point.y;
+    let z = point.z * 10;
+
+    const cosPitch = Math.cos(pitch);
+    const sinPitch = Math.sin(pitch);
+    const pitchedY = y * cosPitch - z * sinPitch;
+    const pitchedZ = y * sinPitch + z * cosPitch;
+    y = pitchedY;
+    z = pitchedZ;
+
+    const cosYaw = Math.cos(yaw);
+    const sinYaw = Math.sin(yaw);
+    const yawedX = x * cosYaw + z * sinYaw;
+    const yawedZ = -x * sinYaw + z * cosYaw;
+    x = yawedX;
+    z = yawedZ;
+
+    const cosRoll = Math.cos(roll);
+    const sinRoll = Math.sin(roll);
+    const rolledX = x * cosRoll - y * sinRoll;
+    const rolledY = x * sinRoll + y * cosRoll;
+    const perspective = Phaser.Math.Clamp(1 + z * 0.012, 0.8, 1.2);
+
+    return {
+      x: rolledX * perspective,
+      y: rolledY * perspective,
+      z: Phaser.Math.Clamp(z / 20, -1, 1)
+    };
+  }
+
+  private drawGatheredLightOrbits(count: number, centerX: number, centerY: number) {
+    if (!this.gatheredLightTraceBack || !this.gatheredLightTraceFront) {
+      return;
+    }
+    const orbitCount = Math.ceil(count / LIGHTS_PER_ORBIT);
+    const newestOrbitReveal = this.getNewestOrbitReveal();
+    const densityFade = 1 - Phaser.Math.Clamp((count - 30) / 90, 0, 0.3);
+
+    for (let orbitIndex = 0; orbitIndex < orbitCount; orbitIndex += 1) {
+      const reveal = orbitIndex === orbitCount - 1 ? newestOrbitReveal : 1;
+      const alpha = (0.18 - Math.min(orbitIndex, 5) * 0.015) * reveal * densityFade;
+      const color = LIGHT_ORBIT_COLORS[orbitIndex % LIGHT_ORBIT_COLORS.length];
+      for (let segment = 0; segment < LIGHT_ORBIT_SEGMENTS; segment += 1) {
+        const angle = (segment / LIGHT_ORBIT_SEGMENTS) * Math.PI * 2;
+        const nextAngle = ((segment + 1) / LIGHT_ORBIT_SEGMENTS) * Math.PI * 2;
+        const point = this.getOrbitPoint(orbitIndex, angle, reveal);
+        const next = this.getOrbitPoint(orbitIndex, nextAngle, reveal);
+        const trace = (point.z + next.z) * 0.5 < 0
+          ? this.gatheredLightTraceBack
+          : this.gatheredLightTraceFront;
+        trace.lineStyle(1, color, alpha * (point.z < 0 ? 0.5 : 1));
+        trace.lineBetween(
+          centerX + point.x,
+          centerY + point.y,
+          centerX + next.x,
+          centerY + next.y
+        );
+      }
+    }
   }
 
   private syncBeat(nextStage: number, progress: number) {
@@ -461,6 +640,7 @@ export class ReturnSwingScene extends BaseScene {
     this.seat?.setPosition(x, y).setRotation(-this.angle * 0.08);
     this.releaseHalo?.setPosition(x, y - 7);
     this.releaseHalo?.setAlpha(0);
+    this.updateGatheredLightPattern(x, y - 7);
   }
 
   private jumpOffSwing() {
@@ -471,6 +651,9 @@ export class ReturnSwingScene extends BaseScene {
     this.rope?.setAlpha(0.22);
     this.seat?.setAlpha(0.28);
     this.releaseHalo?.setAlpha(0);
+    this.gatheredLights.forEach((light) => light.setVisible(false));
+    this.gatheredLightTraceBack?.clear();
+    this.gatheredLightTraceFront?.clear();
     const direction = Math.sign(this.angle) || 1;
     playFirstAvailable(this, this.player, ["player:jump", "player:fall", "player:idle"]);
     this.tweens.add({
@@ -605,6 +788,8 @@ export class ReturnSwingScene extends BaseScene {
         this.state = "swinging";
         this.rope?.setAlpha(1);
         this.seat?.setAlpha(1);
+        this.gatheredLights.forEach((light) => light.setVisible(true));
+        this.updateSwingPosition();
         this.controls?.setActionLabel("JUMP OFF");
         this.swingKickBlend = updateSwingKickPose(this.player, this.swingKickBlend, false, 0);
         this.showToast("The seat takes your weight again", "#dec2c9", 620);

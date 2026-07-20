@@ -5,7 +5,7 @@ import { TouchControls } from "../game/input/TouchControls";
 import { LeaveAnxiety } from "../game/narrative/LeaveAnxiety";
 import { gameState } from "../game/state/gameState";
 import { gameHud, type ChoiceSide } from "../game/ui/GameHud";
-import { updateSwingKickPose } from "../game/visuals/StoryVisuals";
+import { createWingedFirefly, updateSwingKickPose } from "../game/visuals/StoryVisuals";
 import { BaseScene } from "./BaseScene";
 import { BALANCE_CONSTANTS, getSwingApexAcceleration, SWING_CONSTANTS } from "./constants";
 
@@ -109,7 +109,7 @@ export class SwingScene extends BaseScene {
   private rope?: Phaser.GameObjects.Graphics;
   private seat?: Phaser.GameObjects.Rectangle;
   private releaseHalo?: Phaser.GameObjects.Arc;
-  private reachLight?: Phaser.GameObjects.Arc;
+  private reachLight?: Phaser.GameObjects.Container;
   private reachSide = 1;
   private gatheredLights: Phaser.GameObjects.Arc[] = [];
   private gatheredLightTraceBack?: Phaser.GameObjects.Graphics;
@@ -333,16 +333,11 @@ export class SwingScene extends BaseScene {
       .setStrokeStyle(1, 0xffd27b, 0.9)
       .setDepth(7)
       .setAlpha(0);
-    this.reachLight = this.add
-      .circle(216, 72, 4, 0xffdf83, 0.86)
-      .setStrokeStyle(1, 0xfff2bd, 1)
-      .setBlendMode(Phaser.BlendModes.ADD)
-      .setDepth(9)
-      .setVisible(false);
+    this.reachLight = createWingedFirefly(this, 216, 72).setVisible(false);
     this.tweens.add({
       targets: this.reachLight,
-      scale: { from: 0.8, to: 1.45 },
-      alpha: { from: 0.55, to: 1 },
+      scale: { from: 0.88, to: 1.12 },
+      alpha: { from: 0.68, to: 1 },
       duration: 760,
       yoyo: true,
       repeat: -1,
@@ -1321,47 +1316,7 @@ export class SwingScene extends BaseScene {
     this.lastBalanceDoubtAt = this.time.now;
     const doubts = BALANCE_DOUBTS[Math.min(BALANCE_DOUBTS.length - 1, stage)];
     const message = doubts[(this.balanceChallengeCount + this.balanceStumbles) % doubts.length];
-    const side = (this.balanceChallengeCount + this.balanceStumbles) % 2 === 0 ? -1 : 1;
-    const doubt = this.add
-      .text(
-        Phaser.Math.Clamp(this.player.x + side * Phaser.Math.Between(28, 48), 70, 250),
-        Phaser.Math.Clamp(this.player.y - Phaser.Math.Between(20, 38), 38, 108),
-        message,
-        {
-          fontFamily: "Georgia, 'Times New Roman', serif",
-          fontSize: "8px",
-          fontStyle: "italic",
-          color: "#ffe7ef",
-          backgroundColor: "rgba(22, 13, 21, 0.82)",
-          padding: { left: 4, right: 4, top: 3, bottom: 3 },
-          wordWrap: { width: 118, useAdvancedWrap: true },
-          align: "center",
-          stroke: "#160d15",
-          strokeThickness: 2
-        }
-      )
-      .setOrigin(0.5)
-      .setAlpha(0)
-      .setDepth(9)
-      .setRotation(Phaser.Math.FloatBetween(-0.035, 0.035));
-    this.tweens.add({
-      targets: doubt,
-      alpha: 0.86,
-      y: doubt.y - 4,
-      duration: 280,
-      ease: "Sine.easeOut",
-      onComplete: () => {
-        this.tweens.add({
-          targets: doubt,
-          alpha: 0,
-          y: doubt.y - 9,
-          duration: 1050,
-          delay: 1250,
-          ease: "Sine.easeIn",
-          onComplete: () => doubt.destroy()
-        });
-      }
-    });
+    gameHud.showWhisper(message, 3000);
   }
 
   private failBalance() {
