@@ -8,3 +8,7 @@ dist
 *.log
 source_assets/audio-masters/
 video-demo/
+
+# Local browser verification artifacts
+test-results/
+playwright-report/
