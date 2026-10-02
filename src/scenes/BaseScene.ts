@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { analytics } from "../analytics";
 import { trackKeys } from "../game/assets/assetConfig";
 import { audioManager } from "../game/audio/AudioManager";
 import { gameState } from "../game/state/gameState";
@@ -18,6 +19,7 @@ export class BaseScene extends Phaser.Scene {
   }
 
   create() {
+    void analytics.track(this.scene.key === "SwingScene" ? "game_started" : "chapter_reached");
     this.gameplayPaused = false;
     this.manualPauseActive = false;
     this.storyBreakActive = false;

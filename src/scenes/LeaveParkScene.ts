@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { analytics } from "../analytics";
 import { audioManager } from "../game/audio/AudioManager";
 import { StoryControls } from "../game/input/StoryControls";
 import type { LeaveMoment } from "../game/narrative/LeaveAnxiety";
@@ -102,6 +103,7 @@ export class LeaveParkScene extends BaseScene {
       ease: "Sine.easeInOut",
       onComplete: () => {
         this.complete = true;
+        void analytics.track("game_completed");
         gameHud.showCinematic(
           presentation.title,
           presentation.body,
