@@ -666,6 +666,7 @@ export class ByShovelScene extends BaseScene {
       ease: "Sine.easeInOut",
       onComplete: () => {
         this.state = "leave-complete";
+        void analytics.track("game_completed");
         gameHud.showCinematic(
           "You leave the playground",
           "Nothing says whether it was escape, surrender, or simply enough.",
@@ -681,3 +682,4 @@ function smoothstep(value: number, start: number, end: number) {
   const t = Phaser.Math.Clamp((value - start) / (end - start), 0, 1);
   return t * t * (3 - 2 * t);
 }
+import { analytics } from "../analytics";
