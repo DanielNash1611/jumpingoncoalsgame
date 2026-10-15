@@ -50,7 +50,7 @@ export class PreloadScene extends BaseScene {
     for (const trackKey of trackKeys) {
       const filename = trackFiles[trackKey];
       if (filename) {
-        this.load.audio(trackKey, `assets/audio-web/${filename}`);
+        this.load.audio(trackKey, `https://km9upglctugamtw6.public.blob.vercel-storage.com/${filename}`);
       }
     }
   }

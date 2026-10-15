@@ -140,7 +140,7 @@ The Vercel deployment uses `npm run build` with `dist` as its output directory.
 - **Architecture:** scene-local mechanics connected through shared audio, run state, lifecycle, touch/story controls, breath pacing, narrative-choice flow, HUD, and visual helpers
 - **Music:** eight non-looping tracks totaling roughly 37.5 minutes; playback progress drives broad dramatic phases rather than beat-mapped input
 - **Runtime art:** `public/assets/backgrounds/`, `public/assets/sprites/`, and `public/assets/brand/`
-- **Runtime audio:** compressed album files in `public/assets/audio-web/`
+- **Runtime audio:** compressed album files in Vercel Blob, with preserved originals in `source-assets/assets/audio-web/`
 - **High-resolution sources:** `source_assets/backgrounds/` and `source_assets/sprites/`
 - **Archival masters:** `source_assets/audio-masters/` locally; gitignored and not required to build
 
@@ -169,3 +169,7 @@ See [ASSET_LICENSE.md](./ASSET_LICENSE.md) for the exact license boundary, prove
 - **Devpost:** [devpost.com/software/jumping-on-coals](https://devpost.com/software/jumping-on-coals)
 - **Build Week evidence:** [BUILD_WEEK.md](./BUILD_WEEK.md)
 - **Development chronology:** [docs/build-week-development-log.md](./docs/build-week-development-log.md)
+
+## Deployment media
+
+Large recordings are served from the public Vercel Blob store and preserved under `source-assets/` for authoring. They are excluded from published builds. See [deployment storage notes](docs/deployment-storage.md).
