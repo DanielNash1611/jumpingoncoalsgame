@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "test:browser": "node scripts/browser-smoke.mjs",
     "test": "vitest run",
-    "check": "npm run typecheck && npm test && npm run build"
+    "check": "npm run typecheck && npm test && npm run build",
+    "postbuild": "node scripts/report-deploy-assets.mjs"
   },
   "dependencies": {
     "phaser": "^3.80.1"
