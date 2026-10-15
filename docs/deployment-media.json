@@ -1,0 +1,61 @@
+{
+  "maxStaticBytes": 8388608,
+  "assets": [
+    {
+      "localPath": "assets/audio-web/03-jumping-on-coals.mp3",
+      "source": "source-assets/assets/audio-web/03-jumping-on-coals.mp3",
+      "url": "https://km9upglctugamtw6.public.blob.vercel-storage.com/03-jumping-on-coals.mp3",
+      "bytes": 4769078,
+      "sha256": "439e8b4439cd47155a1d67b351f27fcd4de992b41f302de3ef723a953a5d341b"
+    },
+    {
+      "localPath": "assets/audio-web/04-digging-in.mp3",
+      "source": "source-assets/assets/audio-web/04-digging-in.mp3",
+      "url": "https://km9upglctugamtw6.public.blob.vercel-storage.com/04-digging-in.mp3",
+      "bytes": 4293858,
+      "sha256": "e05949cec83df64377bc9a47f75480799cf670c878e660ca78a4f567dd3be2af"
+    },
+    {
+      "localPath": "assets/audio-web/08-back-in-the-swing-again.mp3",
+      "source": "source-assets/assets/audio-web/08-back-in-the-swing-again.mp3",
+      "url": "https://km9upglctugamtw6.public.blob.vercel-storage.com/08-back-in-the-swing-again.mp3",
+      "bytes": 5020271,
+      "sha256": "75ce321586b320fd183f448bf7e67a5c9b81413b57b670b1c3a77d0229c50c77"
+    },
+    {
+      "localPath": "assets/audio-web/01-back-in-the-swing.mp3",
+      "source": "source-assets/assets/audio-web/01-back-in-the-swing.mp3",
+      "url": "https://km9upglctugamtw6.public.blob.vercel-storage.com/01-back-in-the-swing.mp3",
+      "bytes": 5085891,
+      "sha256": "98256e16e00fd434a5dafebc402d10ff6bb6f883cc86d217dd9cbe8c03f1a810"
+    },
+    {
+      "localPath": "assets/audio-web/07-by-the-shovel.mp3",
+      "source": "source-assets/assets/audio-web/07-by-the-shovel.mp3",
+      "url": "https://km9upglctugamtw6.public.blob.vercel-storage.com/07-by-the-shovel.mp3",
+      "bytes": 5091324,
+      "sha256": "e1318c67608ffb777fef832b7ec6bd742205d8d1692b5c44048416fdab5d22a8"
+    },
+    {
+      "localPath": "assets/audio-web/05-at-the-bottom.mp3",
+      "source": "source-assets/assets/audio-web/05-at-the-bottom.mp3",
+      "url": "https://km9upglctugamtw6.public.blob.vercel-storage.com/05-at-the-bottom.mp3",
+      "bytes": 4446831,
+      "sha256": "0b0c91131dc85628ed8bd264b7e50931eab5e2a10bc7398ffd55b3c60daf2135"
+    },
+    {
+      "localPath": "assets/audio-web/02-losing-balance.mp3",
+      "source": "source-assets/assets/audio-web/02-losing-balance.mp3",
+      "url": "https://km9upglctugamtw6.public.blob.vercel-storage.com/02-losing-balance.mp3",
+      "bytes": 5113058,
+      "sha256": "8708b96a8f7019a2d9dbc7b7dd7de2ff7e1d24c601aaf9b7690e6d03a989a6ff"
+    },
+    {
+      "localPath": "assets/audio-web/06-digging-out.mp3",
+      "source": "source-assets/assets/audio-web/06-digging-out.mp3",
+      "url": "https://km9upglctugamtw6.public.blob.vercel-storage.com/06-digging-out.mp3",
+      "bytes": 2186508,
+      "sha256": "5f80066a9c6fdbdd0091ad285b467b4c1f5b9d44d2b566a24895eaa3179aa60f"
+    }
+  ]
+}
